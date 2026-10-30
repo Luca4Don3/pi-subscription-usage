@@ -155,16 +155,26 @@ export const SUPPORTED_ADAPTERS: readonly UsageProviderAdapter[] = [
 			label: "OpenCode Zen wallet balance",
 		},
 		async query(auth, signal, timeoutMs) {
-			return normalizeOpenCodeZenBalance(
-				await fetchProviderJson(
-					OPENCODE_ZEN_BILLING_URL,
-					auth,
-					signal,
-					timeoutMs,
-					"OpenCode Zen billing endpoint",
-				),
-				Date.now(),
-			);
+			try {
+				return normalizeOpenCodeZenBalance(
+					await fetchProviderJson(
+						OPENCODE_ZEN_BILLING_URL,
+						auth,
+						signal,
+						timeoutMs,
+						"OpenCode Zen billing endpoint",
+					),
+					Date.now(),
+				);
+			} catch (error) {
+				// 403 是端点级权限（常见于 oc_sk_ key），不是余额耗尽。
+				if (/returned 403\b/.test(String(error))) {
+					throw new Error(
+						"OpenCode Zen billing rejected this credential (HTTP 403). Sign in with an account that has billing access; this is not an exhausted balance.",
+					);
+				}
+				throw error;
+			}
 		},
 	},
 	{
