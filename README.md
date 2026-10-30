@@ -20,9 +20,12 @@ View your active subscription quota directly inside [Pi](https://github.com/eare
 | **OpenAI (ChatGPT)** | `openai` **and** `openai-codex` (same account/workspace)¹ | `Plan limits` + active app limits | Yes (`Account Resets`) |
 | **OpenAI Codex** | `openai-codex` | `5h`, `1w`, model-specific windows | Yes (`Resets Left`) |
 | **OpenCode Zen (Go)** | `opencode` | `5h`, `1w`, `1m` (Go subscription windows) | — |
+| **OpenCode Zen balance** | `opencode` | Wallet balance (`$x.xx`, console billing) | — |
 | **xAI Grok** | `xai` / `xai-auth` | `1w` and/or `1m` | — |
 | **Kimi Coding** | `kimi` | `5h`, `1w`, membership plan | — |
 | **OpenDesign** | `opendesign` + account control key² | `5h`, `1w`, wallet balance | — |
+
+> ³ **What does the OpenCode Zen balance require?** The balance comes from `https://opencode.ai/console/api/billing/status`. Some `oc_sk_…` API keys are rejected by that endpoint with `HTTP 403`; that is endpoint-level permission, not an exhausted balance, and the extension reports it instead of guessing.
 
 > ² **Why does OpenDesign need a control key?** Quota and wallet endpoints accept only the account control key (`vela_ctrl_…`) issued by OpenDesign sign-in, never the model runtime key (`sk-amr-…`). The extension reads the existing DSH OpenDesign sign-in (`~/.dsh/.credentials.yaml`) read-only by default, or uses `OPENDESIGN_CONTROL_KEY`; with neither it reports the mode as unavailable instead of fabricating zero.
 

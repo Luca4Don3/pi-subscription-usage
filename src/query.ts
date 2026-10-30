@@ -31,6 +31,7 @@ import {
 	openaiClientIdFromAuthorization,
 } from "./providers/openai.ts";
 import { normalizeOpenCodeGoUsage } from "./providers/opencode-go.ts";
+import { normalizeOpenCodeZenBalance } from "./providers/opencode-zen.ts";
 import {
 	OPENDESIGN_CONTROL_ORIGIN,
 	fetchOpenDesignQuota,
@@ -47,6 +48,7 @@ const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 const RESET_CREDITS_URL =
 	"https://chatgpt.com/backend-api/wham/rate-limit-reset-credits";
 const OPENCODE_GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage";
+const OPENCODE_ZEN_BILLING_URL = "https://opencode.ai/console/api/billing/status";
 const KIMI_USAGE_URL = "https://api.kimi.com/coding/v1/usages";
 const GROK_USER_URL = "https://cli-chat-proxy.grok.com/v1/user";
 const GROK_CREDITS_URL =
@@ -138,6 +140,28 @@ export const SUPPORTED_ADAPTERS: readonly UsageProviderAdapter[] = [
 					signal,
 					timeoutMs,
 					"OpenCode Go usage endpoint",
+				),
+				Date.now(),
+			);
+		},
+	},
+	{
+		id: "opencode",
+		displayName: "OpenCode Zen",
+		providerIds: ["opencode"],
+		officialOrigins: ["https://opencode.ai"],
+		semantics: {
+			kind: "consumer-subscription",
+			label: "OpenCode Zen wallet balance",
+		},
+		async query(auth, signal, timeoutMs) {
+			return normalizeOpenCodeZenBalance(
+				await fetchProviderJson(
+					OPENCODE_ZEN_BILLING_URL,
+					auth,
+					signal,
+					timeoutMs,
+					"OpenCode Zen billing endpoint",
 				),
 				Date.now(),
 			);

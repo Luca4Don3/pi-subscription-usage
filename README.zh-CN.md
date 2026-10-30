@@ -20,9 +20,12 @@
 | **OpenAI (ChatGPT)** | `openai` **以及** `openai-codex`（同一账号/工作区）¹ | 套餐总限额 (`Plan limits`) + 当前应用限额 | 支持 (`Account Resets`) |
 | **OpenAI Codex** | `openai-codex` | `5h`、`1w`、各模型独立窗口 | 支持 (`Resets Left`) |
 | **OpenCode Zen (Go)** | `opencode` | `5h`、`1w`、`1m`（Go 订阅窗口） | — |
+| **OpenCode Zen 余额** | `opencode` | 钱包余额（`$x.xx`，来自 console billing） | — |
 | **xAI Grok** | `xai` / `xai-auth` | `1w` 和/或 `1m` | — |
 | **Kimi Coding** | `kimi` | `5h`、`1w`、会员套餐等级 | — |
 | **OpenDesign** | `opendesign` + 账号 control key² | `5h`、`1w`、钱包余额 | — |
+
+> ³ **OpenCode Zen 余额需要什么权限？** 余额来自 `https://opencode.ai/console/api/billing/status`。部分 `oc_sk_…` API Key 会被该端点以 `HTTP 403` 拒绝，这是端点级权限，不是额度耗尽；插件会明确报错，不会显示猜测值。
 
 > ² **为什么 OpenDesign 需要 control key？** 额度与余额接口只接受账号授权产生的 control key（`vela_ctrl_…`），不接受模型 runtime key（`sk-amr-…`）。扩展默认只读复用 DSH 的 OpenDesign 登录（`~/.dsh/.credentials.yaml`），也可以用环境变量 `OPENDESIGN_CONTROL_KEY` 指定；两者都没有时只报告不可用，不会伪造 0。
 
