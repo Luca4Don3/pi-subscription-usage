@@ -27,11 +27,18 @@
 
 > ³ **OpenCode Zen 余额需要什么权限？** 余额来自 `https://opencode.ai/console/api/billing/status`。部分 `oc_sk_…` API Key 会被该端点以 `HTTP 403` 拒绝，这是端点级权限，不是额度耗尽；插件会明确报错，不会显示猜测值。
 
-> ² **为什么 OpenDesign 需要 control key？** 额度与余额接口只接受账号授权产生的 control key（`vela_ctrl_…`），不接受模型 runtime key（`sk-amr-…`）。扩展默认只读复用 DSH 的 OpenDesign 登录（`~/.dsh/.credentials.yaml`），也可以用环境变量 `OPENDESIGN_CONTROL_KEY` 指定；两者都没有时只报告不可用，不会伪造 0。
+> ² **为什么 OpenDesign 需要 control key？** 额度与余额接口只接受账号授权产生的 control key（`vela_ctrl_…`），不接受模型 runtime key（`sk-amr-…`）。在 Pi 中运行 `/opendesign-login` 完成设备授权，control key 会保存到 `~/.pi/agent/subscription-usage.json`（权限 0600）；也可以用环境变量 `OPENDESIGN_CONTROL_KEY` 指定。扩展不会读取 DSH 等其他工具的凭据；两者都没有时只报告不可用，不会伪造 0。
 
 > ¹ **为什么 OpenAI 模式需要执行一次 `/login openai-codex`？** OpenAI 的用量与重置接口会拒绝 `Sign in with ChatGPT` 令牌（返回 `HTTP 401`）。用同一个 ChatGPT 账号/工作区执行一次 `/login openai-codex` 后，插件即可借用该凭据读取用量，日常对话模型仍可保持为 `openai`。
 
 ---
+
+## OpenDesign 授权
+
+```text
+/opendesign-login    打开设备授权链接，在浏览器确认后保存 control key
+/opendesign-logout   删除 Pi 中保存的 control key
+```
 
 ## 安装
 

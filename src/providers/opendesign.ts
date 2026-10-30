@@ -1,8 +1,9 @@
 // OpenDesign 控制面额度读取。
 //
-// 与 DSH live-models 的双凭据设计一致：模型请求用 runtime key（sk-amr-…），
-// 额度查询只接受 control key（vela_ctrl_…），且只发往 amr-api 控制面。
-// 这里不会把 Pi 保存的 runtime key 发到控制面，也不会把 control key 写回任何位置。
+// 模型请求用 runtime key（sk-amr-…）；额度查询只接受 control key（vela_ctrl_…），
+// 且只发往 amr-api 控制面。control key 由本扩展自己的授权流程
+// （/opendesign-login）保存到 Pi 配置，或由 OPENDESIGN_CONTROL_KEY 提供；
+// 不读取其他工具（如 DSH）的凭据，也不把 runtime key 发到控制面。
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -10,36 +11,46 @@ import { sanitizeDisplayText } from "../core.ts";
 import type { UsageBucket, UsageMetric, UsageReport } from "../types.ts";
 
 export const OPENDESIGN_CONTROL_ORIGIN = "https://amr-api.open-design.ai";
+export const USAGE_CONFIG_FILE = "subscription-usage.json";
 
-const DSH_CREDENTIALS_FILE = join(homedir(), ".dsh", ".credentials.yaml");
+/** 与 Pi 的 getAgentDir() 一致：PI_AGENT_DIR 优先，否则 ~/.pi/agent。 */
+export function piAgentDir(): string {
+	const env = process.env.PI_AGENT_DIR;
+	if (env) {
+		return env.startsWith("~") ? join(homedir(), env.slice(1)) : env;
+	}
+	return join(homedir(), ".pi", "agent");
+}
+
+export function usageConfigPath(): string {
+	return join(piAgentDir(), USAGE_CONFIG_FILE);
+}
+
 const MAX_BODY_BYTES = 128 * 1024;
 const MAX_TIMEOUT_MS = 30_000;
 
-export interface OpenDesignControlKey {
-	/** 仅用于 amr-api 控制面的 control key。 */
-	controlKey: string;
-}
-
 /**
- * 从 DSH 的凭据文件读取 OpenDesign control key（只读，不复制、不改写）。
- * 解析失败或未登录时返回 undefined，由调用方给出可行动提示。
+ * 只读取当前 Pi agent 自己的配置：环境变量优先，其次是
+ * ~/.pi/agent/subscription-usage.json 中的 opendesignControlKey。
  */
 export function readOpenDesignControlKey(
-	file = DSH_CREDENTIALS_FILE,
-): OpenDesignControlKey | undefined {
-	if (!existsSync(file)) return undefined;
-	let text: string;
+	configFile = usageConfigPath(),
+): string | undefined {
+	const env = process.env.OPENDESIGN_CONTROL_KEY?.trim();
+	if (env && /^vela_ctrl_[!-~]+$/.test(env)) return env;
+	if (!existsSync(configFile)) return undefined;
 	try {
-		text = readFileSync(file, "utf8");
+		const parsed = JSON.parse(readFileSync(configFile, "utf8")) as unknown;
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+			return undefined;
+		}
+		const value = (parsed as Record<string, unknown>).opendesignControlKey;
+		return typeof value === "string" && /^vela_ctrl_[!-~]+$/.test(value.trim())
+			? value.trim()
+			: undefined;
 	} catch {
 		return undefined;
 	}
-	const start = text.indexOf("dsh-opencode-live-models/opendesign:");
-	if (start < 0) return undefined;
-	// 只在该记录所在的小段内匹配，避免误取其他记录的凭据。
-	const section = text.slice(start, start + 2048);
-	const controlKey = /^\s*control:\s*(vela_ctrl_[!-~]+)\s*$/m.exec(section)?.[1];
-	return controlKey ? { controlKey } : undefined;
 }
 
 export interface OpenDesignQuotaPayload {

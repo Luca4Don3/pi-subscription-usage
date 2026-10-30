@@ -182,37 +182,22 @@ test("refuses a non-control key before any request", async () => {
 	assert.equal(called, false);
 });
 
-test("reads the control key only from the OpenDesign record", () => {
-	const dir = mkdtempSync(join(tmpdir(), "od-cred-"));
-	const file = join(dir, ".credentials.yaml");
+test("reads the control key only from this Pi agent's config", () => {
+	delete process.env.OPENDESIGN_CONTROL_KEY;
+	const dir = mkdtempSync(join(tmpdir(), "od-config-"));
+	const file = join(dir, "subscription-usage.json");
 	writeFileSync(
 		file,
-		[
-			"refs:",
-			"  OTHER: sk-amr-not-this-one",
-			"  dsh-opencode-live-models/opendesign:",
-			"    kind: grant",
-			"    payload:",
-			"      type: oauth",
-			"      access: sk-amr-fixture",
-			"      control: vela_ctrl_fixture",
-			"      uid: fixture",
-			"",
-		].join("\n"),
+		JSON.stringify({ displayMode: "used", opendesignControlKey: controlKey }),
 	);
-	assert.equal(readOpenDesignControlKey(file)?.controlKey, controlKey);
+	assert.equal(readOpenDesignControlKey(file), controlKey);
 
-	const apiKeyOnly = join(dir, "api-key.yaml");
 	writeFileSync(
-		apiKeyOnly,
-		[
-			"  dsh-opencode-live-models/opendesign:",
-			"    kind: grant",
-			"    payload:",
-			"      type: api-key",
-			"      access: sk-amr-fixture",
-			"",
-		].join("\n"),
+		file,
+		JSON.stringify({ opendesignControlKey: "sk-amr-runtime" }),
 	);
-	assert.equal(readOpenDesignControlKey(apiKeyOnly), undefined);
+	assert.equal(readOpenDesignControlKey(file), undefined);
+
+	writeFileSync(file, JSON.stringify({ opendesignControlKey: "vela_ctrl_" }));
+	assert.equal(readOpenDesignControlKey(file), undefined);
 });

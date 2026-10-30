@@ -27,11 +27,18 @@ View your active subscription quota directly inside [Pi](https://github.com/eare
 
 > ³ **What does the OpenCode Zen balance require?** The balance comes from `https://opencode.ai/console/api/billing/status`. Some `oc_sk_…` API keys are rejected by that endpoint with `HTTP 403`; that is endpoint-level permission, not an exhausted balance, and the extension reports it instead of guessing.
 
-> ² **Why does OpenDesign need a control key?** Quota and wallet endpoints accept only the account control key (`vela_ctrl_…`) issued by OpenDesign sign-in, never the model runtime key (`sk-amr-…`). The extension reads the existing DSH OpenDesign sign-in (`~/.dsh/.credentials.yaml`) read-only by default, or uses `OPENDESIGN_CONTROL_KEY`; with neither it reports the mode as unavailable instead of fabricating zero.
+> ² **Why does OpenDesign need a control key?** Quota and wallet endpoints accept only the account control key (`vela_ctrl_…`) issued by OpenDesign sign-in, never the model runtime key (`sk-amr-…`). Run `/opendesign-login` in Pi to complete device authorization; the control key is saved to `~/.pi/agent/subscription-usage.json` (mode 0600), or set `OPENDESIGN_CONTROL_KEY`. The extension never reads DSH or other tools' credentials, and with neither it reports the mode as unavailable instead of fabricating zero.
 
 > ¹ **Why does OpenAI require a one-time `/login openai-codex`?** OpenAI rejects `Sign in with ChatGPT` tokens on its usage and reset endpoints (`HTTP 401`). Run `/login openai-codex` once with the same ChatGPT account/workspace so the extension can query quota, while keeping `openai` as your active model.
 
 ---
+
+## OpenDesign authorization
+
+```text
+/opendesign-login    open the device authorization link and save the control key
+/opendesign-logout   remove the saved control key from Pi
+```
 
 ## Installation
 
