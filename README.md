@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-View your active subscription quota directly inside [Pi](https://github.com/earendil-works/pi-mono) — in the footer status bar and via `/usage` — across OpenAI (ChatGPT), OpenAI Codex, OpenCode Go, xAI Grok, and Kimi Coding.
+View your active subscription quota directly inside [Pi](https://github.com/earendil-works/pi-mono) — in the footer status bar and via `/usage` — across OpenAI (ChatGPT), OpenAI Codex, OpenCode Go (OpenCode Zen subscription windows), xAI Grok, Kimi Coding, and OpenDesign.
 
 - **One consistent view** — 5-hour, weekly, and monthly quota windows rendered with uniform progress bars and `MM/DD HH:mm` reset times.
 - **Live footer countdown** — compact status bar summary (e.g. `5h 99% ↻2h13m · 1w 85% ↻3d4h`) that updates automatically after each turn and every 5 minutes.
@@ -19,9 +19,12 @@ View your active subscription quota directly inside [Pi](https://github.com/eare
 | --- | --- | --- | --- |
 | **OpenAI (ChatGPT)** | `openai` **and** `openai-codex` (same account/workspace)¹ | `Plan limits` + active app limits | Yes (`Account Resets`) |
 | **OpenAI Codex** | `openai-codex` | `5h`, `1w`, model-specific windows | Yes (`Resets Left`) |
-| **OpenCode Go** | `opencode` | `5h`, `1w`, `1m` | — |
+| **OpenCode Zen (Go)** | `opencode` | `5h`, `1w`, `1m` (Go subscription windows) | — |
 | **xAI Grok** | `xai` / `xai-auth` | `1w` and/or `1m` | — |
 | **Kimi Coding** | `kimi` | `5h`, `1w`, membership plan | — |
+| **OpenDesign** | `opendesign` + account control key² | `5h`, `1w`, wallet balance | — |
+
+> ² **Why does OpenDesign need a control key?** Quota and wallet endpoints accept only the account control key (`vela_ctrl_…`) issued by OpenDesign sign-in, never the model runtime key (`sk-amr-…`). The extension reads the existing DSH OpenDesign sign-in (`~/.dsh/.credentials.yaml`) read-only by default, or uses `OPENDESIGN_CONTROL_KEY`; with neither it reports the mode as unavailable instead of fabricating zero.
 
 > ¹ **Why does OpenAI require a one-time `/login openai-codex`?** OpenAI rejects `Sign in with ChatGPT` tokens on its usage and reset endpoints (`HTTP 401`). Run `/login openai-codex` once with the same ChatGPT account/workspace so the extension can query quota, while keeping `openai` as your active model.
 
@@ -116,6 +119,8 @@ In addition to setting Pi's plain footer status (`setStatus`), the extension emi
 - **Official endpoints only**: Credentials are resolved through `ctx.modelRegistry.getProviderAuth()` and sent strictly to official provider domains. Custom proxies and base URLs are rejected.
 - **No external file snooping**: Grok never reads `~/.grok/auth.json` or falls back to API keys.
 - **In-memory privacy**: Tokens are never written to caches, session files, status bars, or error logs; cache keys use in-process HMAC fingerprints.
+- **OpenDesign split planes**: the model runtime key (`sk-amr-…`) only goes to `amr-link.open-design.ai`; the quota control key (`vela_ctrl_…`) only goes to `amr-api.open-design.ai`. Neither crosses over, and quota requests never carry the runtime key.
+- **OpenCode Zen scope**: OpenCode Go exposes `5h`/`1w`/`1m` windows; Zen pay-as-you-go wallet balance has no public endpoint and is never guessed.
 - **Fail-safe on undocumented APIs**: OpenAI app usage, Codex resets, Grok billing, and Kimi usage rely on undocumented provider endpoints. If an endpoint changes or accounts mismatch, the extension reports a clear error rather than guessing or showing another account's quota.
 
 ---

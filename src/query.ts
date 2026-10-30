@@ -31,6 +31,12 @@ import {
 	openaiClientIdFromAuthorization,
 } from "./providers/openai.ts";
 import { normalizeOpenCodeGoUsage } from "./providers/opencode-go.ts";
+import {
+	OPENDESIGN_CONTROL_ORIGIN,
+	fetchOpenDesignQuota,
+	normalizeOpenDesignQuota,
+	readOpenDesignControlKey,
+} from "./providers/opendesign.ts";
 import type {
 	ResolvedUsageAuth,
 	UsageProviderAdapter,
@@ -133,6 +139,35 @@ export const SUPPORTED_ADAPTERS: readonly UsageProviderAdapter[] = [
 					timeoutMs,
 					"OpenCode Go usage endpoint",
 				),
+				Date.now(),
+			);
+		},
+	},
+	{
+		id: "opendesign",
+		displayName: "OpenDesign",
+		providerIds: ["opendesign"],
+		officialOrigins: [
+			"https://amr-link.open-design.ai",
+			OPENDESIGN_CONTROL_ORIGIN,
+		],
+		semantics: {
+			kind: "consumer-subscription",
+			label: "OpenDesign Design Plan usage and wallet",
+		},
+		async query(_auth, signal, timeoutMs) {
+			// Pi 保存的是模型 runtime key；额度查询只接受 control key。
+			// 默认复用 DSH 的 OpenDesign 账号授权，只读，不复制凭据。
+			const controlKey =
+				process.env.OPENDESIGN_CONTROL_KEY?.trim() ||
+				readOpenDesignControlKey()?.controlKey;
+			if (!controlKey) {
+				throw new Error(
+					"OpenDesign quota needs an account control key. Sign in to OpenDesign through DSH first, or set OPENDESIGN_CONTROL_KEY.",
+				);
+			}
+			return normalizeOpenDesignQuota(
+				await fetchOpenDesignQuota(controlKey, signal, timeoutMs),
 				Date.now(),
 			);
 		},

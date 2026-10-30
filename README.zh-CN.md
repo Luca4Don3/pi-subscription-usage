@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-在 [Pi](https://github.com/earendil-works/pi-mono) 终端底部状态栏与 `/usage` 面板中，统一查看当前订阅账号的实时额度——支持 OpenAI (ChatGPT)、OpenAI Codex、OpenCode Go、xAI Grok 和 Kimi Coding。
+在 [Pi](https://github.com/earendil-works/pi-mono) 终端底部状态栏与 `/usage` 面板中，统一查看当前订阅账号的实时额度——支持 OpenAI (ChatGPT)、OpenAI Codex、OpenCode Go（OpenCode Zen 订阅窗口）、xAI Grok、Kimi Coding 和 OpenDesign。
 
 - **多平台统一视图**：以一致的进度条和 `MM/DD HH:mm` 重置时间展示 5 小时、每周、每月及模型专属额度窗口。
 - **底部栏实时倒计时**：状态栏自动显示紧凑摘要（如 `5h 99% ↻2h13m · 1w 85% ↻3d4h`），每轮对话后及每 5 分钟自动刷新。
@@ -19,9 +19,12 @@
 | --- | --- | --- | --- |
 | **OpenAI (ChatGPT)** | `openai` **以及** `openai-codex`（同一账号/工作区）¹ | 套餐总限额 (`Plan limits`) + 当前应用限额 | 支持 (`Account Resets`) |
 | **OpenAI Codex** | `openai-codex` | `5h`、`1w`、各模型独立窗口 | 支持 (`Resets Left`) |
-| **OpenCode Go** | `opencode` | `5h`、`1w`、`1m` | — |
+| **OpenCode Zen (Go)** | `opencode` | `5h`、`1w`、`1m`（Go 订阅窗口） | — |
 | **xAI Grok** | `xai` / `xai-auth` | `1w` 和/或 `1m` | — |
 | **Kimi Coding** | `kimi` | `5h`、`1w`、会员套餐等级 | — |
+| **OpenDesign** | `opendesign` + 账号 control key² | `5h`、`1w`、钱包余额 | — |
+
+> ² **为什么 OpenDesign 需要 control key？** 额度与余额接口只接受账号授权产生的 control key（`vela_ctrl_…`），不接受模型 runtime key（`sk-amr-…`）。扩展默认只读复用 DSH 的 OpenDesign 登录（`~/.dsh/.credentials.yaml`），也可以用环境变量 `OPENDESIGN_CONTROL_KEY` 指定；两者都没有时只报告不可用，不会伪造 0。
 
 > ¹ **为什么 OpenAI 模式需要执行一次 `/login openai-codex`？** OpenAI 的用量与重置接口会拒绝 `Sign in with ChatGPT` 令牌（返回 `HTTP 401`）。用同一个 ChatGPT 账号/工作区执行一次 `/login openai-codex` 后，插件即可借用该凭据读取用量，日常对话模型仍可保持为 `openai`。
 
@@ -116,6 +119,8 @@ pi install /absolute/path/to/pi-subscription-usage
 - **仅限官方直连**：仅通过 `ctx.modelRegistry.getProviderAuth()` 解析凭据并发送至官方域名，拒绝任何自定义代理或自定义 Base URL。
 - **严禁跨路径读取**：Grok 仅使用 Pi 的 OAuth 凭据，绝不读取 `~/.grok/auth.json`，也不接受用 API Key 替代订阅登录。
 - **凭据不落盘**：Token 不会写入缓存文件、会话记录、状态栏或报错信息；内存缓存键仅保存进程内 HMAC 指纹。
+- **OpenDesign 双平面**：模型 runtime key（`sk-amr-…`）只发送到 `amr-link.open-design.ai`，额度 control key（`vela_ctrl_…`）只发送到 `amr-api.open-design.ai`；两者不混用，额度请求也不会把 runtime key 带出。
+- **OpenCode Zen 范围**：OpenCode Go 的 `5h`/`1w`/`1m` 窗口可读；Zen 按量计费的钱包余额没有公开接口，插件不会显示猜测值。
 - **未公开接口容错**：OpenAI 应用用量、Codex 重置、Grok 账单和 Kimi 用量均依赖各厂商未公开的内部接口。若遇到账号/工作区不匹配或接口变更，插件会直接报告错误，绝不冒用其他账号数据。
 
 ---
