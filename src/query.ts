@@ -194,10 +194,10 @@ export const SUPPORTED_ADAPTERS: readonly UsageProviderAdapter[] = [
 			// 默认复用 DSH 的 OpenDesign 账号授权，只读，不复制凭据。
 			const controlKey =
 				process.env.OPENDESIGN_CONTROL_KEY?.trim() ||
-				readOpenDesignControlKey()?.controlKey;
+				readOpenDesignControlKey();
 			if (!controlKey) {
 				throw new Error(
-					"OpenDesign quota needs an account control key. Sign in to OpenDesign through DSH first, or set OPENDESIGN_CONTROL_KEY.",
+					"OpenDesign quota needs an account control key. Run /opendesign-login, or set OPENDESIGN_CONTROL_KEY.",
 				);
 			}
 			return normalizeOpenDesignQuota(
