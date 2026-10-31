@@ -13,8 +13,9 @@ export function normalizeOpenCodeZenBalance(
 ): UsageReport {
 	const root = asObject(payload);
 	const microcents = asSafeInteger(root?.availableMicroCents);
-	const amount =
+	const rawAmount =
 		microcents === undefined ? undefined : microcents / MICROCENTS_PER_USD;
+	const amount = rawAmount === undefined ? undefined : Math.max(0, rawAmount);
 	const metrics: UsageMetric[] = [];
 	if (amount !== undefined) {
 		metrics.push({
@@ -28,7 +29,9 @@ export function normalizeOpenCodeZenBalance(
 	if (amount === undefined) {
 		notes.push("Billing response did not include a valid balance.");
 	}
-	if (amount !== undefined && amount <= 0) {
+	if (rawAmount !== undefined && rawAmount < 0) {
+		notes.push("Balance was reported negative and is displayed as 0.");
+	} else if (amount !== undefined && amount <= 0) {
 		notes.push("Balance is exhausted.");
 	}
 	return {

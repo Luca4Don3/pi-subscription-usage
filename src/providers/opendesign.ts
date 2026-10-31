@@ -15,7 +15,7 @@ export const USAGE_CONFIG_FILE = "subscription-usage.json";
 
 /** 与 Pi 的 getAgentDir() 一致：PI_AGENT_DIR 优先，否则 ~/.pi/agent。 */
 export function piAgentDir(): string {
-	const env = process.env.PI_AGENT_DIR;
+	const env = process.env.PI_CODING_AGENT_DIR;
 	if (env) {
 		return env.startsWith("~") ? join(homedir(), env.slice(1)) : env;
 	}
@@ -70,11 +70,17 @@ export async function fetchOpenDesignQuota(
 	timeoutMs: number,
 	fetchImpl: typeof fetch = globalThis.fetch,
 ): Promise<OpenDesignQuotaPayload> {
+	const deadline = Date.now() + Math.min(Math.max(1, timeoutMs), MAX_TIMEOUT_MS);
+	const remaining = () => {
+		const left = deadline - Date.now();
+		if (left <= 0) throw new Error("OpenDesign quota query timed out.");
+		return left;
+	};
 	const workspace = await requestControlJson(
 		"/api/v1/workspaces/current",
 		controlKey,
 		signal,
-		timeoutMs,
+		remaining(),
 		fetchImpl,
 	);
 	const workspaceId =
@@ -86,7 +92,7 @@ export async function fetchOpenDesignQuota(
 		`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/billing/preflight`,
 		controlKey,
 		signal,
-		timeoutMs,
+		remaining(),
 		fetchImpl,
 	);
 	let summary: Record<string, unknown> | undefined;
@@ -96,7 +102,7 @@ export async function fetchOpenDesignQuota(
 			"/api/v1/billing/summary",
 			controlKey,
 			signal,
-			timeoutMs,
+			remaining(),
 			fetchImpl,
 		);
 	} catch (error) {
@@ -217,10 +223,11 @@ async function requestControlJson(
 	const abortFromCaller = () => controller.abort();
 	if (signal.aborted) controller.abort();
 	else signal.addEventListener("abort", abortFromCaller, { once: true });
-	const timer = setTimeout(
-		() => controller.abort(),
-		Math.min(Math.max(1, timeoutMs), MAX_TIMEOUT_MS),
-	);
+	let timedOut = false;
+	const timer = setTimeout(() => {
+		timedOut = true;
+		controller.abort();
+	}, Math.min(Math.max(1, timeoutMs), MAX_TIMEOUT_MS));
 	try {
 		const response = await fetchImpl(url.href, {
 			method: "GET",
@@ -248,6 +255,14 @@ async function requestControlJson(
 			throw new Error("OpenDesign quota endpoint returned an invalid JSON object.");
 		}
 		return object;
+	} catch (error) {
+		if (timedOut) {
+			throw new Error("OpenDesign quota request timed out.");
+		}
+		if (controller.signal.aborted) {
+			throw new Error("OpenDesign quota request was cancelled.");
+		}
+		throw error;
 	} finally {
 		clearTimeout(timer);
 		signal.removeEventListener("abort", abortFromCaller);

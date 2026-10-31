@@ -30,12 +30,7 @@ import {
 	resolveCodexResetAuth,
 } from "./codex-resets.ts";
 import { formatProviderState } from "./format.ts";
-import {
-	pollOpenDesignDeviceLogin,
-	removeOpenDesignControlKey,
-	saveOpenDesignControlKey,
-	startOpenDesignDeviceLogin,
-} from "./opendesign-auth.ts";
+import { removeOpenDesignControlKey } from "./opendesign-auth.ts";
 import { CODEX_PROVIDER_ID } from "./providers/codex-constants.ts";
 import { OPENAI_PROVIDER_ID } from "./providers/openai.ts";
 import {
@@ -585,40 +580,6 @@ export default function subscriptionUsage(pi: ExtensionAPI): void {
 			activeControllers.delete(controller);
 		}
 	}
-
-	pi.registerCommand("opendesign-login", {
-		description: "Authorize OpenDesign to read Design Plan usage and wallet",
-		handler: async (args, ctx) => {
-			if (args.trim()) {
-				ctx.ui.notify("/opendesign-login takes no arguments.", "warning");
-				return;
-			}
-			try {
-				const login = await startOpenDesignDeviceLogin();
-				const minutes = Math.max(
-					1,
-					Math.round((login.expiresAt - Date.now()) / 60_000),
-				);
-				const hint = login.userCode
-					? `Open ${login.activationUrl} and enter code ${login.userCode}`
-					: `Open ${login.activationUrl}`;
-				ctx.ui.notify(`${hint} (expires in ${minutes} min)`, "info");
-				void pollOpenDesignDeviceLogin(login)
-					.then(({ controlKey }) => {
-						saveOpenDesignControlKey(controlKey);
-						ctx.ui.notify(
-							"OpenDesign authorized. Run /usage to see Design Plan windows and wallet balance.",
-							"info",
-						);
-					})
-					.catch((error) => {
-						ctx.ui.notify(`OpenDesign login failed: ${errorMessage(error)}`, "error");
-					});
-			} catch (error) {
-				ctx.ui.notify(`OpenDesign login failed: ${errorMessage(error)}`, "error");
-			}
-		},
-	});
 
 	pi.registerCommand("opendesign-logout", {
 		description: "Remove the saved OpenDesign control key from this Pi agent",

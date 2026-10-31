@@ -242,13 +242,29 @@ async function readJsonObject(response: Response): Promise<Record<string, unknow
 	if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
 		throw new Error("OpenDesign authorization response exceeded the size limit.");
 	}
-	const text = await response.text();
-	if (text.length > MAX_BODY_BYTES) {
-		throw new Error("OpenDesign authorization response exceeded the size limit.");
+	const reader = response.body?.getReader();
+	if (!reader) {
+		throw new Error("OpenDesign authorization returned an invalid response.");
+	}
+	const chunks: Uint8Array[] = [];
+	let bytes = 0;
+	try {
+		for (;;) {
+			const part = await reader.read();
+			if (part.done) break;
+			bytes += part.value.byteLength;
+			if (bytes > MAX_BODY_BYTES) {
+				void reader.cancel().catch(() => {});
+				throw new Error("OpenDesign authorization response exceeded the size limit.");
+			}
+			chunks.push(part.value);
+		}
+	} finally {
+		reader.releaseLock();
 	}
 	let parsed: unknown;
 	try {
-		parsed = JSON.parse(text);
+		parsed = JSON.parse(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), bytes).toString("utf8"));
 	} catch {
 		throw new Error("OpenDesign authorization returned invalid JSON.");
 	}

@@ -6,6 +6,7 @@ import test from "node:test";
 import {
 	fetchOpenDesignQuota,
 	normalizeOpenDesignQuota,
+	piAgentDir,
 	readOpenDesignControlKey,
 } from "../src/providers/opendesign.ts";
 import { SUPPORTED_ADAPTERS } from "../src/query.ts";
@@ -200,4 +201,35 @@ test("reads the control key only from this Pi agent's config", () => {
 
 	writeFileSync(file, JSON.stringify({ opendesignControlKey: "vela_ctrl_" }));
 	assert.equal(readOpenDesignControlKey(file), undefined);
+});
+
+test("agent dir follows Pi's PI_CODING_AGENT_DIR", () => {
+	const previous = process.env.PI_CODING_AGENT_DIR;
+	process.env.PI_CODING_AGENT_DIR = "/tmp/pi-agent-fixture";
+	try {
+		assert.equal(piAgentDir(), "/tmp/pi-agent-fixture");
+	} finally {
+		if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = previous;
+	}
+});
+
+test("a request timeout is a normal error, not an abort", async () => {
+	const fetchImpl: typeof fetch = (_input, init) =>
+		new Promise((_resolve, reject) => {
+			init?.signal?.addEventListener(
+				"abort",
+				() => reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
+				{ once: true },
+			);
+		});
+	await assert.rejects(
+		fetchOpenDesignQuota(
+			controlKey,
+			new AbortController().signal,
+			10,
+			fetchImpl,
+		),
+		/timed out/,
+	);
 });

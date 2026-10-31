@@ -63,3 +63,14 @@ test("missing or invalid balance stays unknown", () => {
 		);
 	}
 });
+
+test("a negative balance is clamped to zero with a note", () => {
+	const report = normalizeOpenCodeZenBalance(
+		{ availableMicroCents: -123_000_000 },
+		capturedAt,
+	);
+	assert.equal(report.metrics[0]?.value, 0);
+	assert.ok(
+		report.notes?.includes("Balance was reported negative and is displayed as 0."),
+	);
+});
