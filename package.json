@@ -45,9 +45,15 @@
     "prepublishOnly": "npm test"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*"
+    "@earendil-works/pi-coding-agent": "*",
+    "@luca4don3/pi-extension-opendesign-bridge": "*"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependenciesMeta": {
+    "@luca4don3/pi-extension-opendesign-bridge": {
+      "optional": true
+    }
   }
 }
